@@ -1,0 +1,11 @@
+spring:
+  kafka:
+    bootstrap-servers: your-msk-cluster-bootstrap-brokers
+    properties:
+      security.protocol: SSL
+      ssl.endpoint.identification.algorithm: https
+      ssl.truststore.location: /path/to/truststore.jks
+      ssl.truststore.password: truststore-password
+      ssl.keystore.location: /path/to/keystore.jks
+      ssl.keystore.password: keystore-password
+      ssl.key.password: key-password
