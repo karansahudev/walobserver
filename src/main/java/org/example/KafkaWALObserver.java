@@ -20,6 +20,8 @@ import org.apache.hadoop.hbase.wal.WALEdit;
 import org.apache.hadoop.hbase.wal.WALKey;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.Future;
 
 
 public class KafkaWALObserver implements WALCoprocessor, WALObserver {
@@ -38,7 +41,6 @@ public class KafkaWALObserver implements WALCoprocessor, WALObserver {
     private KafkaProducer<String, String> producer;
     private String topic;
 
-    private String kafkaBrokers;
     private final ObjectMapper mapper = new ObjectMapper();
     private JsonNode jsonSchema;
 
@@ -47,7 +49,7 @@ public class KafkaWALObserver implements WALCoprocessor, WALObserver {
         FileSystem fs = FileSystem.get(configuration);
         Path filePath = new Path(path);
         try (FSDataInputStream inputStream = fs.open(filePath)) {
-            // Use ByteArrayOutputstream to read data from input stream
+            // Use ByteArray Output stream to read data from input stream
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
             int nRead;
             byte[] data = new byte[16384]; // Buffer size can be adjusted according to needs
@@ -59,22 +61,34 @@ public class KafkaWALObserver implements WALCoprocessor, WALObserver {
         }
     }
 
-    @Override @SuppressWarnings("deprecation")
+    static Configuration configuration;
+    public static void main(String[] args) {
+        configuration= new Configuration();
+        configuration.set("kafka.topic", "test");
+        configuration.set("kafka.brokers", "localhost:9092");
+
+        KafkaWALObserver observer = new KafkaWALObserver();
+        observer.start(null);
+    }
+
+    @Override
     public void start(CoprocessorEnvironment env) {
         log.info("Starting KafkaWALObserver initialization");
         try {
             Configuration conf = env.getConfiguration();
             this.topic = conf.get("kafka.topic", "hbase-mutations");
-            this.kafkaBrokers = conf.get("kafka.brokers", ": 9092");
+            String kafkaBrokers = conf.get("kafka.brokers", "localhost:9092");
+            String schemaPath = conf.get("schema.path", "/usr");
+
             log.info("Configured topic: {} and brokers: {}", topic, kafkaBrokers);
-            String schemaJson = loadSchemaFromHDFS("/scripts/conf-charter/json_schemas/bin/schema.json");
+            String schemaJson = loadSchemaFromHDFS(schemaPath);
             this.jsonSchema = mapper.readTree(schemaJson);
             log.info("Loaded JSON schema successfully");
             Properties props = new Properties();
             props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBrokers);
             props.put(ProducerConfig.CLIENT_ID_CONFIG, "KafkaWALObserverProducer");
-            props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org-apache.kafka.common.serialization.stringSerializer");
-            props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org. apache.kafka.common.serialization.StringSerializer");
+            props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+            props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
             producer = new KafkaProducer<>(props);
             log.info("Kafka producer initialized successfully");
             log.info("KafkaWALObserver started successfully");
@@ -108,7 +122,10 @@ public void postWALWrite(ObserverContext<? extends WALCoprocessorEnvironment> ct
         try{
             String json = convertCellToJsonBasedOnSchema(cell, jsonSchema);
             log.info("JSON Conversion Result: {}", json);
-            log.info("Simulating sending to Kafka - Topic: {}, Key: {}, JSON: {}", topic, logkey, json);
+
+            log.info("Sending to Kafka - Topic: {}, Key: {}, JSON: {}", topic, logkey, json);
+            Future<RecordMetadata> metadata = producer.send(new ProducerRecord<>(topic, rowkey, json));
+            log.info("Metadata: {}", metadata.get());
         } catch (Exception e) {
                 log. error ("Error converting cell to JSON or sending to Kafka", e);
         }

@@ -7,4 +7,28 @@
         <name>hbase.zookeeper.property.clientPort</name>
         <value>2181</value>
     </property>
+
+    <!-- CoProcessor Class Name -->
+    <property>
+        <name>hbase.coprocessor.wal.classes</name>
+        <value>org.example.KafkaWALObserver</value>
+    </property>
+
+    <!-- Kafka configuration properties -->
+    <property>
+        <name>kafka.borkers</name>
+        <value>localhost:9092</value>
+    </property>
+
+    <property>
+        <name>kafka.topic</name>
+        <value>test-topic</value>
+    </property>
+
+    <!-- Schema path configuration -->
+    <property>
+        <name>schema.path</name>
+        <value>/Users/karansahu/Documents/Schema.json</value>
+    </property>
+
 </configuration>
