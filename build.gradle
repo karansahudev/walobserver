@@ -1,0 +1,51 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '7.1.2' // Add Shadow plugin
+}
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    implementation 'org.apache.hadoop:hadoop-common:3.2.2'
+    implementation 'org.apache.hadoop:hadoop-hdfs:3.2.2'
+    implementation 'org.apache.hadoop:hadoop-client:3.2.2'
+    implementation 'org.apache.hadoop:hadoop-core:1.2.1' // Ensure compatibility with your HBase version
+    implementation 'org.apache.hbase:hbase-common:2.4.9'
+    implementation 'org.apache.hbase:hbase-client:2.4.9'
+    implementation 'org.apache.hbase:hbase-server:2.4.9'
+    implementation 'org.apache.hbase:hbase:1.0.0' // Adjust version if needed
+    implementation 'org.apache.kafka:kafka-clients:3.0.0' // Kafka client dependency
+    implementation 'org.slf4j:slf4j-api:1.7.32' // SLF4J for logging
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.1' // Jackson for JSON processing
+}
+
+application {
+    // Specify the main class for the application
+    mainClassName = 'org.example.KafkaWALObserver'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8 // Ensure Java version compatibility
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+tasks.withType(Test) {
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+    }
+}
+
+// Configuration for Shadow plugin
+shadowJar {
+    mergeServiceFiles()
+    manifest {
+        attributes 'Main-Class': 'org.example.KafkaWALObserver' // Specify main class for JAR manifest
+    }
+}

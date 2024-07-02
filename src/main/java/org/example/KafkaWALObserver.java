@@ -61,15 +61,15 @@ public class KafkaWALObserver implements WALCoprocessor, WALObserver {
         }
     }
 
-    static Configuration configuration;
-    public static void main(String[] args) {
-        configuration= new Configuration();
-        configuration.set("kafka.topic", "test");
-        configuration.set("kafka.brokers", "localhost:9092");
-
-        KafkaWALObserver observer = new KafkaWALObserver();
-        observer.start(null);
-    }
+//    static Configuration configuration;
+//    public static void main(String[] args) {
+//        configuration= new Configuration();
+//        configuration.set("kafka.topic", "test");
+//        configuration.set("kafka.brokers", "localhost:9092");
+//
+//        KafkaWALObserver observer = new KafkaWALObserver();
+//        observer.start(null);
+//    }
 
     @Override
     public void start(CoprocessorEnvironment env) {
